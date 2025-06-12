@@ -20,8 +20,10 @@ Jane,Smith,jane.smith@example.com,1992-09-22
 # ... (remaining records)
 ```
 
+### Easy way out
+
 <details>
-  <summary>🧞 Easy way out</summary>
+  <summary>🧞</summary>
 
   Download the [sample contact.csv file](assets/contact.csv).
 
