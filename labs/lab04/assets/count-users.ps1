@@ -84,8 +84,8 @@ $groupCounts.GetEnumerator() |
 
     python3 -m venv venv
     venv/bin/Activate.ps1
-    venv/bin/python3 -m pip install pandas matplotlib  
-    venv/bin/python3 -c "
+    python3 -m pip install pandas matplotlib  
+    python3 -c "
 import pandas as pd; import matplotlib.pyplot as plt
 df = pd.read_csv('groupcounts.csv')
 df.sort_values('Name', inplace=True)
@@ -93,3 +93,4 @@ plt.bar(df['Name'], df['Value'])
 plt.xlabel('Databases per User'); plt.ylabel('User Count'); plt.title('User Duplicates')
 plt.show()
 "
+    deactivate #deactivate python virtual environment
