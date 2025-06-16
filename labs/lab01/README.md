@@ -70,28 +70,31 @@ Generate a contact.csv file containing a sample set of 2000 contact records cont
 
    - Complete the import process
 
+
 ## Task 2: Create a Logic App to calculate age statistics
 
 ### Logic App Creation Steps:
 
-1. **Navigate to Azure Portal** and create a new Logic App:
+1. **Navigate to Azure Portal** https://portal.azure.com and create a new Logic App:
 
    - Search for "Logic App" in the Azure portal.
    - Click "Add" to create a new Logic App.
-   - Provide a name, resource group, region, and other required details.
-   - Choose "Consumption" plan type.
-   - Click "Review + create" and then "Create."
+   - Select **Consumption** plan
+   - Enter the following data:
+     - Resource group: **rgdevN** where N is your assigned number
+     - Name: name of your choice , for example, **aggregateN** 
+     - Region: **North Europe**
+   - Click "Review + create" and then "Create"
+   - Select **Edit**
 
 2. **Configure your Logic App with the following steps**:
 
-   a. **Trigger**: Use a manual trigger (HTTP request) or a recurrence trigger.
+   a. **Trigger**: Use **When HTTP Request is received**.
 
    b. **Connect to Dataverse and retrieve contacts**:
 
    - Add a new step: "Dataverse - List rows."
    - Select "Contacts" as the table.
-   - Set appropriate filters if needed.
-   - You may need to set a high limit to retrieve all 2000 contacts.
 
    c. **Initialize Variables**:
 
@@ -145,6 +148,7 @@ Generate a contact.csv file containing a sample set of 2000 contact records cont
      - Inputs:
 
        `if(equals(mod(length(outputs('sortedAges')), 2), 0), div(add(outputs('sortedAges')[sub(div(length(outputs('sortedAges')), 2), 1)], outputs('sortedAges')[div(length(outputs('sortedAges')), 2)]), 2), outputs('sortedAges')[div(length(outputs('sortedAges')), 2)])` 
+
 
 ## Task 3: Add code step to calculate statistics
 
