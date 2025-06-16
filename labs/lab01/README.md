@@ -136,7 +136,10 @@ Because the connector is newly created there is no Connection yet so in order to
 
 This will open a new tab where you have the default Create New Connection interface like for all connectors. Which fields are shown is dependent on the selected authentication method. In our case this is the API key. Recognize the name of this field? That's the label we defined in the **Security** step! Click **Create Connection** to create it.
 
+You find the API Key in the file secrets.md here in this repository. (Remind me to rotate the key after the workshop!)
+
 !["Create Connection"](./assets/lab02_02_testcreateconnection.png)
+
 
 You will be redirect to the test screen. If the **Connection** field is still empty, click on the **Refresh** button and your newly created connection shows up.
 
