@@ -7,12 +7,10 @@ In this lab, you will go through the following tasks:
 * Setup authentication
 * Add operation with Parameters
 
-## Task 0: Environment Setup
-
 <details>
   <summary>🧑‍🏫 Prerequisites</summary>
   
-## Power Apps Developer Environment
+### Power Apps Developer Environment
 
 The Power Apps Developer Environment is a free, personal environment that allows you to build and test apps, flows, and other solutions using Microsoft Power Platform. It provides a sandbox for developers to experiment with Dataverse, Power Apps, Power Automate, and more.
 To get started, you need to create a Power Apps Developer Environment if you don't have one already. Follow these steps:
@@ -23,9 +21,10 @@ To get started, you need to create a Power Apps Developer Environment if you don
 4. Once created, you can access your environment from the Power Apps portal at [make.powerapps.com](https://make.powerapps.com).
 5. In the Power Apps portal, you can create and manage your apps, flows, and data tables.
 
+### Azure Subscription
+The Azure subscription is required to access various Azure services, including Logic Apps, Azure Functions, Azure Storage, and Azure Data Factory, which are used in this workshop. If you don't have an Azure subscription, you can sign up for a free account at [Azure Free Account](https://azure.microsoft.com/free/).
+
 </details>
-
-
 
 ## Task 1: Create a solution
 
