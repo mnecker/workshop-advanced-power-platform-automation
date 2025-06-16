@@ -22,7 +22,7 @@ echo "📋 Fetching client database names from $DISCOVERY_DB..."
 client_dbs=()
 while IFS= read -r line; do
   client_dbs+=("$line")
-done < <(sqlcmd $AUTH_ARGS -S "$SERVER" -d "$DISCOVERY_DB" -h -1 -W -Q "SET NOCOUNT ON;SELECT database_name FROM clients")
+done < <(sqlcmd $AUTH_ARGS -S "$SERVER" -d "$DISCOVERY_DB" -h -1 -W -Q "SET NOCOUNT ON;SELECT [database] FROM clients")
 
 # Loop through each DB
 for dbname in "${client_dbs[@]}"; do

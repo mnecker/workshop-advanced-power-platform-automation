@@ -2,42 +2,59 @@
 $server = "wpaine.database.windows.net"
 $discoveryDb = "discovery"
 
+$discoveryUsername = Read-Host "Enter discovery database username"
+$discoveryPassword = Read-Host "Enter discovery database password" -AsSecureString
+ $discoveryPasswordPlain = $discoveryPassword | ConvertFrom-SecureString -AsPlainText
 # Helper: Run sqlcmd and return results as array of strings
 function Run-SqlCmd {
     param (
+        [string]$server,
         [string]$database,
-        [string]$query
+        [string]$query,
+        [string]$username = $null,
+        [string]$password = $null
     )
     $tempFile = New-TemporaryFile
-    & sqlcmd --authentication-method ActiveDirectoryAzCli -S $server -d $database -Q $query -W -h -1 -s "," > $tempFile
+    if ($username -and $password) {
+        & sqlcmd -U $username -P $password -S $server -d $database -Q $query -W -h -1 -s "," > $tempFile
+    } else {
+        & sqlcmd --authentication-method ActiveDirectoryAzCli -S $server -d $database -Q $query -W -h -1 -s "," > $tempFile
+    }
     $results = Get-Content $tempFile | Where-Object { $_ -ne "" }
     Remove-Item $tempFile -Force
     return $results
 }
 
-# Step 1: Get list of databases from discovery_db
-$databases = Run-SqlCmd -database $discoveryDb -query "SET NOCOUNT ON;SELECT database_name FROM clients"
-$total = $databases.Count
+# Step 1: Get list of client records from discovery_db
+$clientRecords = Run-SqlCmd -server $server -database $discoveryDb -query "SET NOCOUNT ON;SELECT [server], [database], username, password FROM clients" -username $discoveryUsername -password $discoveryPasswordPlain
+
+$total = $clientRecords.Count
 $index = 0
 
 # Step 2: Build email → set of databases map
 $emailDbMap = @{}
 
-foreach ($db in $databases) {
+foreach ($record in $clientRecords | Where-Object { $_.Trim() -ne "" }) {
     $index++
-    Write-Output "[$index/$total] Processing database: $db"
+    $columns = $record -split ","
+    $clientServer = $columns[0].Trim()
+    $clientDatabase = $columns[1].Trim()
+    $clientUsername = $columns[2].Trim()
+    $clientPassword = $columns[3].Trim()
+
+    Write-Output "[$index/$total] Processing database: $clientDatabase on $clientServer"
 
     try {
-        $emails = Run-SqlCmd -database $db -query "SET NOCOUNT ON;SELECT email FROM users"
+        $emails = Run-SqlCmd -server $clientServer -database $clientDatabase -query "SET NOCOUNT ON;SELECT email FROM users" -username $clientUsername -password $clientPassword
         foreach ($email in $emails) {
             $emailLower = $email.ToLower()
             if (-not $emailDbMap.ContainsKey($emailLower)) {
                 $emailDbMap[$emailLower] = [System.Collections.Generic.HashSet[string]]::new()
             }
-            $emailDbMap[$emailLower].Add($db) | Out-Null
+            $emailDbMap[$emailLower].Add($clientDatabase) | Out-Null
         }
     } catch {
-        Write-Warning "Failed to query ${db}: $_"
+        Write-Warning "Failed to query ${clientDatabase} on ${clientServer}: $_"
     }
 }
 

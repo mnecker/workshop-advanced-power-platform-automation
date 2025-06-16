@@ -3,7 +3,7 @@ $RESOURCE_GROUP = "wpaine"
 $SERVER_NAME = "wpaine"
 $ELASTIC_POOL = "wpaine"
 $DISCOVERY_DB = "discovery"
-$AUTH_ARGS = "--authentication-method ActiveDirectoryAzCli"
+$AUTH_ARGS = @("--authentication-method", "ActiveDirectoryAzCli")
 
 # Step 0: Open firewall for the current IP
 $MY_IP = Invoke-RestMethod -Uri "https://api.ipify.org"
@@ -17,13 +17,14 @@ az sql server firewall-rule create `
 
 # Step 1: Fetch database names into a variable
 Write-Host "Fetching database names from $DISCOVERY_DB"
-$DATABASES = & sqlcmd $AUTH_ARGS -S "$SERVER_NAME.database.windows.net" -d "$DISCOVERY_DB" -h -1 -W -Q "SET NOCOUNT ON;SELECT database_name FROM clients;" | ForEach-Object { $_.Trim() }
-Write-Host "Databases to create: $($DATABASES -join ', ')"
-exit 1
+$DATABASES = & sqlcmd $AUTH_ARGS -S "$SERVER_NAME.database.windows.net" -d "$DISCOVERY_DB" -h -1 -W -Q "SET NOCOUNT ON;SELECT [database] FROM clients;" | ForEach-Object { $_.Trim() } |
+    Where-Object { $_ -ne "" }
+
 # Step 2: Loop through the list of databases
 $DATABASES | ForEach-Object -Parallel {
     $dbname = $_
     Write-Host "Creating database: $dbname"
+
     # Create the database inside the elastic pool
     $dbexists = az sql db show `
         --name $dbname `
@@ -73,7 +74,7 @@ $DATABASES | ForEach-Object -Parallel {
     }
 
     # Generate a random password for the database user
-    $DB_USER = "${dbname}_reader"
+    $DB_USER = "${dbName}_reader"
     $DB_PASSWORD = New-AzureSqlPassword 16 # Escape single quotes for SQL
 
     $userSql = @"
@@ -88,14 +89,13 @@ $DATABASES | ForEach-Object -Parallel {
 
     # Step 4: Create user and add to db_owner in the target database
     & sqlcmd -S "$using:SERVER_NAME.database.windows.net" $using:AUTH_ARGS -d "$dbname" -Q $userSql
-    # Step 5: Generate and store the connection string
-    $CONNECTION_STRING = "Server=tcp:$using:SERVER_NAME.database.windows.net,1433;Database=$dbname;User ID=$DB_USER;Password=$DB_PASSWORD;"
-Write-Host $CONNECTION_STRING
+    # Step 5: Store the credentials
+    
 # Test the new user's connection
 & sqlcmd -S "$using:SERVER_NAME.database.windows.net" -U "$DB_USER" -P "$DB_PASSWORD" -d "$dbname" -Q "SELECT 1"
-    & sqlcmd $using:AUTH_ARGS -S "$using:SERVER_NAME.database.windows.net" -d "$using:DISCOVERY_DB" -Q "UPDATE clients SET connection = '$CONNECTION_STRING' WHERE database_name = '$dbname';"
+    & sqlcmd $using:AUTH_ARGS -S "$using:SERVER_NAME.database.windows.net" -d "$using:DISCOVERY_DB" -Q "UPDATE clients SET [username] = '$DB_USER', [password]='$DB_PASSWORD' WHERE [database] = '$dbname';"
 
-    Write-Host "Database $dbname created with user $DB_USER. Connection string updated."
+    Write-Host "Database $dbname created with user $DB_USER. Connection details updated."
 } -ThrottleLimit 10
 
 Write-Host "All databases and users created successfully!"
