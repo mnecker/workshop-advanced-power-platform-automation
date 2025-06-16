@@ -9,6 +9,21 @@ In this lab, you will complete the following tasks:
 3. Extend the Logic App with a script step to perform faster cost-effective statistical calculations.
 4. Bonus task: create a custom connector that performs statistical calculations. Connector can be used in Power Atuomate and Logic Apps.
 
+<details>
+  <summary>🧑‍🏫 Prerequisites</summary>
+
+## Power Apps Developer Environment
+The Power Apps Developer Environment is a free, personal environment that allows you to build and test apps, flows, and other solutions using Microsoft Power Platform. It provides a sandbox for developers to experiment with Dataverse, Power Apps, Power Automate, and more.
+To get started, you need to create a Power Apps Developer Environment if you don't have one already. Follow these steps:
+
+1. Go to the [Power Apps Developer Plan](https://powerapps.microsoft.com/developerplan/) page.
+2. Sign in with your Microsoft account or create a new one.
+3. Click on "Get started" to create your developer environment.
+4. Once created, you can access your environment from the Power Apps portal at [make.powerapps.com](https://make.powerapps.com).
+5. In the Power Apps portal, you can create and manage your apps, flows, and data tables.
+
+</details>
+
 ## Task 1: Create and import sample contacts.csv file into Dataverse
 
 First, you'll need to create a sample contacts.csv file with 2000 records containing first name, last name, email, and birthdate:
@@ -23,7 +38,7 @@ Jane,Smith,jane.smith@example.com,1992-09-22
 ### Easy way out
 
 <details>
-  <summary>🧞</summary>
+  <summary>🧞 Show me the way</summary>
 
   Download the [sample contact.csv file](assets/contact.csv).
 
@@ -34,7 +49,7 @@ Jane,Smith,jane.smith@example.com,1992-09-22
 1. Use GenAI tool of your choice, e.g. Microsoft Copilot, ChatGPT, Claude with the following prompt:
 
 ```text
-Generate a contact.csv file containing a sample set of 2000 contact records containing first name, last name, email, birthdate. Birthdate should be in the range from 13 years old until 99 years old. Emails should include some email addresses with single quotes and  some with + signs
+Generate a contact.csv file containing a sample set of 2000 contact records containing first name, last name, email, birthdate. Birthdate should be in the range from 13 years to 99 years old. Emails should include some email addresses with single quotes and some with + signs
 ```
 
 1. Import into Dataverse
