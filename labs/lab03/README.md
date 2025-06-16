@@ -7,8 +7,7 @@ In this lab, you will complete the following tasks:
 1. Generate and import a sample contacts.csv file that contains 2000 contact records with personal information into your Dataverse developer instance.
 2. Create a Logic App to calculate age statistics (average, median, and mean ages) across the imported contacts.
 3. Extend the Logic App with a script step to perform faster cost-effective statistical calculations.
-4. Bonus task: create a custom connector that performs statistical calculations. Connector can be used in Power Atuomate and Logic Apps.
-
+4. Bonus task: create a custom connector that performs statistical calculations. Connector can be used in Power Automate and Logic Apps.
 
 ## Task 1: Create and import sample contacts.csv file into Dataverse
 
@@ -34,9 +33,12 @@ Jane,Smith,jane.smith@example.com,1992-09-22
 
 1. Use GenAI tool of your choice, e.g. Microsoft Copilot, ChatGPT, Claude with the following prompt:
 
-> ```text
-> Generate a contact.csv file containing a sample set of 2000 contact records containing first name, last name, email, birthdate. Birthdate should be in the range from 13 years to 99 years old. Emails should include some email addresses with single quotes and some with + signs. There should be no duplicate emails in the dataset.
-> ```
+```text
+Generate a contact.csv file containing a sample set of 2000 contact records containing
+first name, last name, email, birthdate. Birthdate should be in the range from 13 years
+to 99 years old. Emails should include some email addresses with single quotes and some
+with + signs. There should be no duplicate emails in the dataset.
+```
 
 1. Import into Dataverse
 
@@ -153,82 +155,60 @@ Add a "Run C# Script" step after the loop in your Logic App. This step will calc
 Inline scripts require the Logic Apps instance to be linked to Azure Integration Account. 
 
 1. Search for an Integration Account and create if required.
-2. Navigate to Logic Apps settings 
+2. Navigate to Logic Apps settings
+3. Select Integration account and save.
 
-### C# Script for Logic Apps
+### JavaScript for Logic Apps
 
 ```csharp
-#r "Newtonsoft.Json"
+var contacts = workflowContext.actions.GetContacts.outputs.body.value;
+var today = new Date();
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using Newtonsoft.Json;
+var ages = contacts
+    .filter(function(c) {
+        return c.birthdate && !isNaN(Date.parse(c.birthdate));
+    })
+    .map(function(c) {
+        var birthdate = new Date(c.birthdate);
+        var age = (today - birthdate) / (1000 * 60 * 60 * 24 * 365.25);
+        return Math.floor(age);
+    });
 
-public class Contact
-{
-    public string Birthdate { get; set; }
+if (ages.length === 0) {
+    return { error: "No valid birthdates found in the input data." };
 }
 
-public static async Task<object> Run(dynamic input, ILogger log)
-{
-    // Parse the input JSON
-    var contacts = JsonConvert.DeserializeObject<List<Contact>>(input.ToString());
+// Calculate average
+var total = ages.reduce(function(a, b) { return a + b; }, 0);
+var averageAge = total / ages.length;
 
-    // Calculate ages
-    var ages = contacts
-        .Where(c => DateTime.TryParse(c.Birthdate, out _))
-        .Select(c => {
-            var birthdate = DateTime.Parse(c.Birthdate);
-            var today = DateTime.UtcNow;
-            return (int)((today - birthdate).TotalDays / 365.25);
-        })
-        .ToList();
-
-    if (ages.Count == 0)
-    {
-        return new { error = "No valid birthdates found in the input data." };
-    }
-
-    // Calculate average (mean)
-    var averageAge = ages.Average();
-
-    // Calculate median
-    ages.Sort();
-    double medianAge;
-    if (ages.Count % 2 == 0)
-    {
-        medianAge = (ages[ages.Count / 2 - 1] + ages[ages.Count / 2]) / 2.0;
-    }
-    else
-    {
-        medianAge = ages[ages.Count / 2];
-    }
-
-    // Return the results
-    return new
-    {
-        TotalContacts = ages.Count,
-        AverageAge = averageAge,
-        MedianAge = medianAge
-    };
+// Calculate median
+ages.sort(function(a, b) { return a - b; });
+var medianAge;
+var mid = Math.floor(ages.length / 2);
+if (ages.length % 2 === 0) {
+    medianAge = (ages[mid - 1] + ages[mid]) / 2;
+} else {
+    medianAge = ages[mid];
 }
+
+return {
+    TotalContacts: ages.length,
+    AverageAge: averageAge,
+    MedianAge: medianAge
+};
 ```
 
+### Steps to Add the JavaScript in Logic Apps
 
-
-### Steps to Add the C# Script in Logic Apps
-
-1. **Add a "Run C# Script" action**:
+1. **Add a "Inline Script" action**:
    - In your Logic App, after the loop step, add a new action.
-   - Search for "Run C# Script" and select it.
-2. **Paste the C# script**:
-   - Copy the script above and paste it into the "Code" section of the "Run C# Script" action.
-3. **Pass the JSON data**:
-   - In the "Inputs" section, pass the JSON array of contacts retrieved from the previous step.
-4. **Save and test your Logic App**:
+   - Search for "Inline Script" and select it.
+2. **Paste the script**:
+   - Copy the script above and paste it into the "Code" section of the "Inline JavaScript" action.
+3. **Save and test your Logic App**:
    - Save the Logic App and trigger it manually or according to your recurrence settings.
-   - Verify the output of the "Run C# Script" step to ensure the statistics are calculated correctly.
+   - Verify the output of the "Inline JavaScript" step to ensure the statistics are calculated correctly.
 
 ### Complete the Logic App:
 
