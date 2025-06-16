@@ -1,428 +1,235 @@
-# Lab 03 - Azure Functions & Dataverse 
+# Lab 03: Custom Code in Logic Apps and Connectors
 
-In this lab, you will go through the following tasks:
+## Exercise Overview
 
-* Create and Publish an Azure Function App
-* Create HTTP Azure Function connecting to external API
-* Authenticate with Dataverse in your Azure Function (either Managed Identity or Connection String)
+In this lab, you will complete the following tasks:
 
-## Scenario
-In this case we want to build a geo tagging function, that automatically updates the longitude and latitude of contacts when they are created with an address. The Azure Function shall later be called async via Power Automate, do all the logic in the Azure Function and update the contact record via Managed Identity Authentication. The advantage of this setup is, that you can have a potential time consuming external API call outsource and managed, while still having the ability to add all the custom logic to it.
-
-For the GeoTagging we will use a free API service called **Geocoding API**, you can sign up for a free API key here https://geocode.maps.co/ click on **Free API Key** and create an account. After you verified  your email they will send you your personal free API Key.
-!["Get Geocoding API Key"](./assets/task0_0_geotagginapikey.png)
-
-Save this API key, we will need it in Task 3!
-
-## Pre-Requisites
-- Azure Subscription
--- Start your free trial here: https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account 
-- Visual Studio Code
-- XrmToolBox (Download and install: https://www.xrmtoolbox.com/)
-
-## Visual Studio Code Project
-If you don't want to create the Visual Studio Code project or have trouble creating it you can find the finished version in this repository https://github.com/mnecker/demo-geotagging 
-
-## Task 0: Prepare Visual Studio Code
-In order to develop Azure Functions in Visual Studio Code we need to install a few extensions to make our lives easier. Open **Visual Studio Code**
-
-### Azure Functions Core Tools
-Go to https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=windows%2Cisolated-process%2Cnode-v4%2Cpython-v2%2Chttp-trigger%2Ccontainer-apps&pivots=programming-language-csharp#install-the-azure-functions-core-tools and download the **Azure Functions Core Tools**. These are required to debug Azure Functions locally. After the download is completed execute the installer and follow it's instructions.
-
-While the download and installation is running you can continue with the next steps.
-
-### Azure Tools Extension for Visual Studio Code
-Go to **Extensions** search for **Azure Tools** and click install. Azure Tools provides a rich set of extensions that make it easy to discover and interact with the cloud services that power your applications.
-
-!["Install Azure Tools"](./assets/task0_1_azuretools.png)
-
-### C# Extension for Visual Studio Code 
-Go to **Extensions** search for **C# Dev Kit** and click install which will add support for C# to Visual Studio Code. You can also create Azure Functions in other programming languages, but the examples in this lab will use
-
-!["Install C# Support"](./assets/task0_1_azuretools.png)
-
-**Important** After installing all pre-requisites (especially Azure Functions Core Tools) close all instances of Visual Studio Code and start it again. Otherwise some extension will not be loaded correctly.
+1. Generate and import a sample contacts.csv file that contains 2000 contact records with personal information into your Dataverse developer instance.
+2. Create a Logic App to calculate age statistics (average, median, and mean ages) across the imported contacts.
+3. Extend the Logic App with a script step to perform faster cost-effective statistical calculations.
+4. Bonus task: create a custom connector that performs statistical calculations. Connector can be used in Power Atuomate and Logic Apps.
 
 
-## Task 1: Create an Azure Function App
-In this task we will use Visual Studio Code to create an Azure Function and publish it to your Azure Subscription. Use an empty window in Visual Studio Code or open a new one.
+## Task 1: Create and import sample contacts.csv file into Dataverse
 
-We are going to create an Azure Function which can be triggered by an HTTP call.
+First, you'll need to create a sample contacts.csv file with 2000 records containing first name, last name, email, and birthdate:
 
-* Press **F1** to open the command bar and search for **Azure Functions: Create new Project** and press enter
-!["Azure Functions Create new project"](./assets/task1_1_createfunction.png)
-
-* Select or create an empty folder where you want to store your project.
-
-* In the next dialog screen select **C#** as language and press enter
-!["Select Language"](./assets/task1_2_language.png)
-
-* In the next dialog screen select **.NET 8.0 Isolated LTS** as .NET Framework version and press enter
-!["Select .NET Version"](./assets/task1_3_dotnet.png)
-
-* In the next dialog screen select **HttpTrigger** as Azure Function template name and press enter
-!["Select Function Template"](./assets/task1_5_template.png)
-
-* In the next dialog screen enter **GetLongitudeLatitude** as function name and press enter
-!["Select Function Name"](./assets/task1_4_name.png)
-
-* Enter a namespace of your choosing for example **Demo.Workshop**
-
-* In the next dialog screen select **Function** for authentication of the Azure Function and press enter
-!["Select Function Security"](./assets/task1_6_security.png)
-
-* Select **Open in current window** and press enter to start the creation of the Azure Functions project.
-
-* If you followed these steps your Visual Studio Code window with the opened project will look like this:
-!["Created Project"](./assets/task1_7_project.png)
-
-## Task 2: Test Azure Function locally
-To test if all pre-requisites  are installed correctly we want to run the created Azure Function. It doesn't do anything useful, but the template created a working Function which will simply return a string.
-
-Open the Azure Function file **GetLongitudeLatitude.cs** and press **F5** to start the build & debug process. This will first build the project and then start a local Azure Functions runtime and run the Function in it. You can follow the progress in the terminal window of Visual Studio Code. If everything is successful, it will display the localhost url where the Function can be triggered:
-!["Locally running Azure Function"](./assets/task2_1_runlocally.png)
-
-If you want to create breakpoint where code execution will be halted during debugging, select a line and press **F9**. 
-
-### Trigger the local Azure Function
-In order to test our local Azure Function we need to call the http URL which is displayed in the terminal. There are multiple tools which can do that like **Postman**. If you have experience with this other similar tools use them. But since we created a simple HTTP GET Function, the most simple way to test it is your browser. Open a new window and enter the url to trigger the function. By default the url should be **http://localhost:7071/api/GetLongitudeLatitude** but it could be different on your machine so check the terminal output.
-!["Test in Browser"](./assets/task2_2_testinbrowser.png)
-
-If you see the text **Welcome to Azure Functions!** your function was successfully executed. If you set a breakpoint early you need to go to Visual Studio Code and continue the code execution.
-
-If you want to stop your debugging / running the function locally, select the terminal and press **Ctrl + C**. If you close it in any other way, the process might still be running locally and the next time you try to debug you will run into errors.
-
-## Task 3: Connect to external API
-The API we want to call needs to parameters to return the longitude and latitude of an address:
-* **q** the address itself
-* **api_key** your personal api key for authentication
-
-The address parameter we want to keep dynamic, because that will change with each execution of the function. But the API key we want to keep secure and since it's always the same it should not be sent with every request. So we will do two different approaches for these two parameters.
-
-### Address parameter
-This parameter will be added as an query parameter to the Azure Function, so that it can be called easily via the url. For this we need to change the code in the file **GetLongitudeLatitude.cs**, overwrite the **[Function("GetLongitudeLatitude")]** with the following.
-
+```csv
+FirstName,LastName,Email,Birthdate
+John,Doe,john.doe@example.com,1980-05-15
+Jane,Smith,jane.smith@example.com,1992-09-22
+# ... (remaining records)
 ```
-[Function("GetLongitudeLatitude")]
-    public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get")]
-        HttpRequest req,
-        string address
-        )
-    {
-        _logger.LogInformation($"Geo Tagging called with address: {address}");
-        return new OkObjectResult(address);
-    }
-```
-!["Added Query Parameter"](./assets/task3_1_queryparameter.png)
 
-You can see that the parameter **address** was added and that we can use it now in the code. At the moment, the address is just logged to the console and returned to the caller. Change your code and test it, if you call your function with a parameter address like this **http://localhost:7071/api/GetLongitudeLatitude?address=Bruno-Kreisky-Platz%205,%201220%20Wien** the result should look like this:
-!["Test Parameter"](./assets/task3_2_parametertest.png)
-
-Noticed that we you test your function in the browser, the browser will automatically URL decode the parameter.
-
-### API Key
-The API Key we want to store in the Azure Function, there are multiple ways to do this, in this example we will use the Application Settings. **This is not recommend for production use cases where you want to secure your secrets better**.
-
-Open the file **local.settings.json** and add a new value under **values** called **geocodingApiKey** with your api key like in this example (replace **YOUR_API_KEY_HERE** with your api key):
-!["API Key in Settings"](./assets/task3_4_apikey.png)
-
-The url we need to call for the api is **https://geocode.maps.co/search?q=address&api_key=api_key** 
-
-**Challenge** implement this code in your Azure Function yourself! (Or via Copilot)
+### Easy way out
 
 <details>
-<summary>Code Solution for Copy & Paste</summary>
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get")]
-        HttpRequest req,
-        string address
-        )
-    {
-        _logger.LogInformation($"Geo Tagging called with address: {address}");
-        var apiKey = Environment.GetEnvironmentVariable("geocodingApiKey");
+  <summary>🧞 Show me the way</summary>
 
-        if (string.IsNullOrEmpty(address) )
-        {
-            return new BadRequestObjectResult("Please provide 'address' as query parameter");
-        }
-
-        string url = $"https://geocode.maps.co/search?api_key={apiKey}&q={System.Net.WebUtility.UrlEncode(address)}";
-
-        HttpResponseMessage response = await httpClient.GetAsync(url);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return new StatusCodeResult((int)response.StatusCode);
-        }
-
-        string jsonResult = await response.Content.ReadAsStringAsync();
-        return new ContentResult
-        {
-            Content = jsonResult,
-            ContentType = "application/json",
-            StatusCode = 200
-        };
-    }  
-
-
-
+  Download the [sample contact.csv file](assets/contact.csv).
 
 </details>
 
-  
-  
-If successfully implemented your function will now return a JSON which includes the longitude and latitude of the entered address:
-!["API Key in Settings"](./assets/task3_6_geocoderesult.png)
+### Standard way
 
-## Task 4: Publish Azure Function to Azure
-After testing the function successfully locally we want to publish to Azure next to make it available.
+1. Use GenAI tool of your choice, e.g. Microsoft Copilot, ChatGPT, Claude with the following prompt:
 
-* Press **F1** in Visual Studio Code and search for **Azure Functions: Create Function App in Azure**
-
-* Select **Sign In Azure** and follow the login process. Do log in with your account which has access to an Azure Subscription
-
-* After successful sign in select your subscription in the next step
-
-* In the next step enter a **Name** for your function app, for example **fa-geotagging** and press enter 
-
-* In the next step select a **Region** where you Azure Function will be hosted, for example **North Europe**
-
-* In the next step select **.NET 8 Isolated** as .NET runtime stack 
-
-* In the next step select **Managed Identity** as authentication for resource authentication type
-
-Wait till the creation process is finished, you can follow the progress in the terminal.
-!["Deployment in Azure"](./assets/task4_1_successdeployment.png)
-
-After this step we only have create the resources for the Azure Function in Azure, but have **not yet deployed the actual code/functions!**. For this we need one more step:
-
-* Press **F1** in Visual Studio Code and search for **Azure Functions: Deploy to Functions App**
-
-* In the next step select the same subscription as in the step before and press enter
-
-* In the next step select your deployed Azure Function (fa-geotagging if you followed the naming) and press enter
-
-* Confirm the deployment and wait for the success log in the terminal
-
-
-If the deployment was successful log in the Azure Portal https://portal.azure.com/ and open your newly created Azure Function. Navigate to your **Resource Groups** and open the one with the auto-generated name from the terminal from the previous step:
-!["Resource Group in Azure"](./assets/task4_2_resourcegroup.png) and open the Azure Function.
-
-In your Azure Function open **Settings** and **Environment Variables**. We also need to add our API Key here, because the **local.settings.json** is never deployed to Azure and only works locally. To create a new **App Setting** click **Add** and enter the same values as from you local.settings.json:
-!["App Settings in Azure"](./assets/task4_3_appsettings.png)
-
-Press **Apply** and **Confirm** to save the changes.
-
-Let's test it! To find out the URL for your deployed Function navigate to **Overview** and select your function. In the new window click on **Get Function url** and copy the value from **default (Function Key)** 
-!["Function URL"](./assets/task4_4_functionurl.png)
-
-Test the url the same way in a new browser window. Be aware that there is already a query parameter called **code** for the authentication, add the address parameter like this at the end of the url: **&address=Bruno-Kreisky-Platz%201,%201220%20Wien**  
-
-If successful you should see the same JSON as you did before!
-
-## Task 5: Extend Function to update a contact
-In order to write the longitude and latitude back to Dataverse, we need to know which contact to update. For this reason we add a new query parameter like the address parameter called **contactguid**.
-!["Contact Guid Parameter"](./assets/task5_1_contactguid.png)
-
-For the communicating with Dataverse we also need to add the Dataverse SDK to our project:
-
-* Press **F1** in Visual Studio Code and search for **NuGet: Add NuGet Package** and press enter
-
-* Search for **Microsoft.PowerPlatform.Dataverse.Client** and press enter, select it and select the latest version and press enter
-
-The SDK is now being installed and can be used in the project.
-
-For the authentication we will add a small wrapper for the **ServiceClient** class which is provided by the SDK. The wrapper **DataverseClient** will utilize the **Managed Identity** feature.
-
-Add the file **DataverseClient.cs** with the following content to your project:
+```text
+Generate a contact.csv file containing a sample set of 2000 contact records containing first name, last name, email, birthdate. Birthdate should be in the range from 13 years to 99 years old. Emails should include some email addresses with single quotes and some with + signs
 ```
-using Azure.Core;
-using Azure.Identity;
-using Microsoft.Extensions.Logging;
-using Microsoft.PowerPlatform.Dataverse.Client;
 
-namespace Demo
+1. Import into Dataverse
+
+   - Log in to your Power Platform admin center
+
+   - Navigate to your developer environment
+
+   - Go to "Data" > "Tables"
+
+   - Select the "Contact" table
+
+   - Click "Import data" > "Import from Excel/CSV"
+
+   - Upload your contacts.csv file
+
+   - Map the columns to the appropriate fields in the Contact entity
+
+   - Complete the import process
+
+
+## Task 2: Create a Logic App to calculate age statistics
+
+### Logic App Creation Steps:
+
+1. **Navigate to Azure Portal** https://portal.azure.com and create a new Logic App:
+
+   - Search for "Logic App" in the Azure portal.
+   - Click "Add" to create a new Logic App.
+   - Select **Consumption** plan
+   - Enter the following data:
+     - Resource group: **rgdevN** where N is your assigned number
+     - Name: name of your choice , for example, **aggregateN** 
+     - Region: **North Europe**
+   - Click "Review + create" and then "Create"
+   - Select **Edit**
+
+2. **Configure your Logic App with the following steps**:
+
+   a. **Trigger**: Use **When HTTP Request is received**.
+
+   b. **Connect to Dataverse and retrieve contacts**:
+
+   - Add a new step: "Dataverse - List rows."
+   - Select "Contacts" as the table.
+
+   c. **Initialize Variables**:
+
+   - Initialize an array variable called `ages` (Type: Array).
+   - Initialize an integer variable called `totalAge` (Type: Integer, Value: 0).
+   - Initialize an integer variable called `count` (Type: Integer, Value: 0).
+
+   d. **Loop through contacts**:
+
+   - Add a "For each" control.
+
+   - Select the "value" output from the List rows action.
+
+   - Inside the loop:
+
+     - Add an "Append to array variable" action:
+
+       - Variable: `ages`.
+
+       - Value: Use an expression to calculate the age:
+
+         `div(sub(ticks(utcNow()),ticks(item()?['birthdate'])),31536000000000)`
+
+     - Add an "Increment variable" action:
+
+       - Variable: `count`.
+       - Value: 1.
+
+     - Add a "Set variable" action:
+
+       - Variable: `totalAge`.
+
+       - Value:
+
+         `add(variables('totalAge'), div(sub(ticks(utcNow()),ticks(item()?['birthdate'])),31536000000000))`
+
+   e. **Sort the ages array**:
+
+   - Add a "Compose" action to sort the `ages` array:
+
+     - Inputs:
+
+       `sort(variables('ages'))`
+
+     - Save the output of this action as `sortedAges`.
+
+   f. **Calculate the median**:
+
+   - Add a "Compose" action to calculate the median:
+
+     - Inputs:
+
+       `if(equals(mod(length(outputs('sortedAges')), 2), 0), div(add(outputs('sortedAges')[sub(div(length(outputs('sortedAges')), 2), 1)], outputs('sortedAges')[div(length(outputs('sortedAges')), 2)]), 2), outputs('sortedAges')[div(length(outputs('sortedAges')), 2)])` 
+
+
+## Task 3: Add code step to calculate statistics
+
+Add a "Run C# Script" step after the loop in your Logic App. This step will calculate the average, median, and mean ages based on the JSON data retrieved from the previous step.
+
+### C# Script for Logic Apps
+
+```csharp
+#r "Newtonsoft.Json"
+
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+
+public class Contact
 {
-	public class DataverseClient
-	{
-		public ServiceClient client;
-		private readonly ILogger _logger;
+    public string Birthdate { get; set; }
+}
 
-		public DataverseClient(
-			ILogger logger
-			)
-		{
-			_logger = logger;
-		}
+public static async Task<object> Run(dynamic input, ILogger log)
+{
+    // Parse the input JSON
+    var contacts = JsonConvert.DeserializeObject<List<Contact>>(input.ToString());
 
-		public void InitializeDefault(string environmentUrl)
-		{
-			try
-			{
-				InitializeManagedIdentity(environmentUrl);
+    // Calculate ages
+    var ages = contacts
+        .Where(c => DateTime.TryParse(c.Birthdate, out _))
+        .Select(c => {
+            var birthdate = DateTime.Parse(c.Birthdate);
+            var today = DateTime.UtcNow;
+            return (int)((today - birthdate).TotalDays / 365.25);
+        })
+        .ToList();
 
-				if (!client.IsReady) throw new Exception("Authentication Failed! - Client not ready");
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex.Message);
-			}
-		}
+    if (ages.Count == 0)
+    {
+        return new { error = "No valid birthdates found in the input data." };
+    }
 
-		public void InitializeManagedIdentity(string environmentUrl)
-		{
-			var tokenCredential = new DefaultAzureCredential();
+    // Calculate average (mean)
+    var averageAge = ages.Average();
 
-			client = new ServiceClient(
-				new Uri(environmentUrl),
-				async (string dataverseUri) =>
-				{
-					dataverseUri = new Uri(dataverseUri).GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped);
-					return (await tokenCredential.GetTokenAsync(new TokenRequestContext(new[] { dataverseUri }), default)).Token;
-				},
-				true);
-		}	
+    // Calculate median
+    ages.Sort();
+    double medianAge;
+    if (ages.Count % 2 == 0)
+    {
+        medianAge = (ages[ages.Count / 2 - 1] + ages[ages.Count / 2]) / 2.0;
+    }
+    else
+    {
+        medianAge = ages[ages.Count / 2];
+    }
 
-        public void InitializeConnectionString(string connectionString)
-        {
-            client = new ServiceClient(connectionString);
-        }	
-	}
+    // Return the results
+    return new
+    {
+        TotalContacts = ages.Count,
+        AverageAge = averageAge,
+        MedianAge = medianAge
+    };
 }
 ```
 
 
 
-### Managed Identity - ONLY WORKS WHEN DATAVERSE AND AZURE FUNCTION ARE IN THE SAME TENANT
-**Be aware** one current disadvantage of Managed Identities is, that they only work within one Microsoft Entra Id tenant. That means it can only authenticate an Azure Function with Dataverse if both are connected to the same Microsoft Entra Id tenant. The simple way to check this is if you login with the same domain to both. But if you are using a test / dev tenant for one of them, you can not use Managed Identity. **In this case skip this section and jump to the next which will show the connection via Connection String**.
+### Steps to Add the C# Script in Logic Apps
 
-As you can see in the function **InitializeManagedIdentity** we will need the environment url of dataverse as a parameter. This will again be stored in the application settings like the geocoding api key. Add the entry **dataverseUrl** to your local.settings.json and in the **Azure Portal** in the environment settings of your Azure Function. The Dataverse url needs to be in the following format: **https://communitydemo.crm4.dynamics.com/** 
+1. **Add a "Run C# Script" action**:
+   - In your Logic App, after the loop step, add a new action.
+   - Search for "Run C# Script" and select it.
+2. **Paste the C# script**:
+   - Copy the script above and paste it into the "Code" section of the "Run C# Script" action.
+3. **Pass the JSON data**:
+   - In the "Inputs" section, pass the JSON array of contacts retrieved from the previous step.
+4. **Save and test your Logic App**:
+   - Save the Logic App and trigger it manually or according to your recurrence settings.
+   - Verify the output of the "Run C# Script" step to ensure the statistics are calculated correctly.
 
-Now we only need to add the code to update the contact. 
+### Complete the Logic App:
 
-**Challenge** Update the function "GetLongitudeLatitude" so that it will update the fields  contact using the DataverseClient.
+1. **Add a "Response" action** to return the results:
+   - Status Code: 200
+   - Content-Type: application/json
+   - Body: Output from the code step
+2. **Save and test your Logic App** by triggering it manually or according to your recurrence settings.
 
-Here is one vibecoded version of it ;)
-```
-public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get")]
-        HttpRequest req,
-        string address,
-        string contactguid
-        )
-    {
-        _logger.LogInformation($"Geo Tagging called with address: {address}");
-        var apiKey = Environment.GetEnvironmentVariable("geocodingApiKey");
+## Expected Results
 
-        if (string.IsNullOrEmpty(address) )
-        {
-            return new BadRequestObjectResult("Please provide 'address' as query parameter");
-        }
+The final Logic App will:
 
-        string url = $"https://geocode.maps.co/search?api_key={apiKey}&q={System.Net.WebUtility.UrlEncode(address)}";
+1. Retrieve all contacts from Dataverse
+2. Calculate ages for all contacts
+3. Compute the average (mean), median, and mode age values
+4. Return these statistics as a JSON response
 
-        HttpResponseMessage response = await httpClient.GetAsync(url);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return new StatusCodeResult((int)response.StatusCode);
-        }
-
-        string jsonResult = await response.Content.ReadAsStringAsync();
-
-        // Parse the JSON string into a JsonDocument
-        using var doc = JsonDocument.Parse(jsonResult);
-
-        // Get the first element in the array
-        var firstItem = doc.RootElement[0];
-
-        // Extract "lat" and "lon" as strings
-        string lat = firstItem.GetProperty("lat").GetString();
-        string lon = firstItem.GetProperty("lon").GetString();
-        double latValue = double.Parse(lat);
-        double lonValue = double.Parse(lon);
-
-        try
-        {
-            DataverseClient dataverseClient = new DataverseClient(_logger);
-            //dataverseClient.InitializeManagedIdentity(Environment.GetEnvironmentVariable("dataverseUrl"));
-            //dataverseClient.InitializeConnectionString(Environment.GetEnvironmentVariable("dataverseConnectionString"));
-
-            Entity contact = new Entity("contact", Guid.Parse(contactguid));
-            contact["address1_latitude"] = latValue;
-            contact["address1_longitude"] = lonValue;
-            await dataverseClient.client.UpdateAsync(contact);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error: {ex.Message}");
-            return new BadRequestObjectResult("Error parsing latitude and longitude");
-        }
-        
-
-        return new ContentResult
-        {
-            Content = jsonResult,
-            ContentType = "application/json",
-            StatusCode = 200
-        };
-    }
-```
-
-Uncomment the **dataverseClient.InitializeManagedIdentity(Environment.GetEnvironmentVariable("dataverseUrl"));** line if you want to use Managed Identity for the connection with Dataverse.
-
-here 
-
-* Deploy changes again
-
-* Add **datavereUrl** in Azure Portal as Application Setting
-
-* In the Azure Portal in the Azure Function navigate under **Settings** to **Identity** and in the tab **System-Assigned** set the status to **On**
-!["Azure Function Managed Identity"](./assets/task5_2_faidentity.png)
-
-* Copy the **Object (principal) id** and navigate in the Azure Portal to **Microsoft Entra Id** https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Overview
-
-* In **Microsoft Entra Id** navigate to **Manage** / **Enterprise Application** and search with the **Object Id** copied from the Azure Function. You should find an application called **fa-geotagging** click on it and copy the **Application Id**
-
-* Switch to Power Platform Admin Center and go to **Environments** https://admin.powerplatform.microsoft.com/manage/environments 
-
-* Select your Dataverse Environment, and click on **S2S Apps** and **App App User** here you have to search with the **Application Id** (nor the Object Id or Name work!)
-
-### Connection String
-Use Connection String as authentication if Managed Identities are not available. See the code example in the previous section and copy it to your project. Uncomment the line **dataverseClient.InitializeConnectionString(Environment.GetEnvironmentVariable("dataverseConnectionString"));** to use the Connection String to authenticate.
-
-To create a connection string for Dataverse go to **Microsoft Entra Id** in the tenant in which your Dataverse environment is. Use this link to go the **Application Registrations** in Entra Id https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps 
-
-* Click on **Create New Application**
-
-* Give it a name, it should be clear that the Azure Function is using it, you can use the same name **fa-geotagging**. You can leave the other settings on their default values and click on **Register**
-
-* Copy the **Application Id** 
-
-* Navigate to **Certificates & Secrets** and click on **New client secret**
-
-* Click on **Add** and copy the **Value** of the secret
-!["Azure Function Managed Identity"](./assets/task5_7_clientsecret.png)
-
-* Go back to your Azure Function and in the **Environments Variable** section create a new **Application Setting** with the name **dataverseConnectionString** - The value has to be in the following format:
-
-**AuthType=ClientSecret;url={DataverseUrl};ClientId={AppId};ClientSecret={ClientSecret}**
-
-* Switch to Power Platform Admin Center and go to **Environments** https://admin.powerplatform.microsoft.com/manage/environments 
-
-* Select your Dataverse Environment, and click on **S2S Apps** and click on **Add App User**
-
-* Select the Application Registration we just created, assign it a business unit and appropriate security roles. 
-
-And we are ready to test again! Call your Function with the Address and ContactGuid of an existing contact and check the result. By default the longitude / latitude field are not displayed on the contact form so you can either:
-* Customize the Contact Form to this display them
-* Using a tool like **LevelUp** to check the data for a record using **All Fields**:
-!["LevelUp - Check Fields"](./assets/task5_8_filledfields.png)
-
-## Bonus Task 1: Create a Custom Connector for your Azure Function
-In order to call the Azure Function from Power Automate it's best to wrap it in a Custom Connector like we learned in Lab 2. Can you do this for your new function?
-
-## Bonus Task 2: Create a Power Automate Flow that triggers the Custom Connector
-Automate the process by building a Power Automate Flow that triggers on change of a contact address field, and calls the Custom Connector with the changed address and contact guid for it to update Longitude and Latitude.
-
-
-
-
+This implementation provides comprehensive age statistics analysis for your imported contact records.
