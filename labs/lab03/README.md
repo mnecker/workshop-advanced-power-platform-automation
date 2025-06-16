@@ -24,7 +24,7 @@ Jane,Smith,jane.smith@example.com,1992-09-22
 ### Easy way out
 
 <details>
-  <summary>🧞 Show me the way</summary>
+  <summary><span style="font-size:200%;">🧞</span> Show me the way</summary>
 
   Download the [sample contact.csv file](assets/contact.csv).
 
@@ -34,9 +34,9 @@ Jane,Smith,jane.smith@example.com,1992-09-22
 
 1. Use GenAI tool of your choice, e.g. Microsoft Copilot, ChatGPT, Claude with the following prompt:
 
-```text
-Generate a contact.csv file containing a sample set of 2000 contact records containing first name, last name, email, birthdate. Birthdate should be in the range from 13 years to 99 years old. Emails should include some email addresses with single quotes and some with + signs
-```
+> ```text
+> Generate a contact.csv file containing a sample set of 2000 contact records containing first name, last name, email, birthdate. Birthdate should be in the range from 13 years to 99 years old. Emails should include some email addresses with single quotes and some with + signs. There should be no duplicate emails in the dataset.
+> ```
 
 1. Import into Dataverse
 
@@ -56,6 +56,14 @@ Generate a contact.csv file containing a sample set of 2000 contact records cont
 
    - Complete the import process
 
+> [!TIP]
+> Switch off duplicate detection rules for names:
+> 
+> 1. Open https://make.powerapps.com/ and switch to your environment
+> 2. Select **Apps**, then select **All**.
+> 3. Hover over **Power Platform Environment Settings** and press Play icon ▶️.
+> 4. Select **Data Management** then select **Duplicate detection rules**.
+> 5. Select **Contacts with the same first name and last name** rule and click **Unpublish**. 
 
 ## Task 2: Create a Logic App to calculate age statistics
 
@@ -79,7 +87,8 @@ Generate a contact.csv file containing a sample set of 2000 contact records cont
 
    b. **Connect to Dataverse and retrieve contacts**:
 
-   - Add a new step: "Dataverse - List rows."
+   - Add a new step: "Dataverse - List rows".
+   - Create connection to your Dataverse instance if required.
    - Select "Contacts" as the table.
 
    c. **Initialize Variables**:
@@ -139,6 +148,12 @@ Generate a contact.csv file containing a sample set of 2000 contact records cont
 ## Task 3: Add code step to calculate statistics
 
 Add a "Run C# Script" step after the loop in your Logic App. This step will calculate the average, median, and mean ages based on the JSON data retrieved from the previous step.
+
+### Prerequisites
+Inline scripts require the Logic Apps instance to be linked to Azure Integration Account. 
+
+1. Search for an Integration Account and create if required.
+2. Navigate to Logic Apps settings 
 
 ### C# Script for Logic Apps
 
