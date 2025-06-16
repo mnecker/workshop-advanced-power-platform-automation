@@ -11,6 +11,7 @@ In this lab, you will go through the following tasks:
 
 <details>
   <summary>🧑‍🏫 Prerequisites</summary>
+  
 ## Power Apps Developer Environment
 
 The Power Apps Developer Environment is a free, personal environment that allows you to build and test apps, flows, and other solutions using Microsoft Power Platform. It provides a sandbox for developers to experiment with Dataverse, Power Apps, Power Automate, and more.
