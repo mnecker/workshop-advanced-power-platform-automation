@@ -240,8 +240,28 @@ After this let's test our new function! **Update Connector** and move to the **T
 
 This works pretty well! But obviously this not an ideal user experience, you need to know very cryptic GUIDs and there is no support on how to enter them. This is one of the limits of the current Custom Connector UX. The UX is better in Power Automate
 
-## Bonus Task 1:
+### Bonus Task 1:
 
 **Challenge** Test the UX in Power Automate!
 
 For this build a flow that iterates through all the events, and per events through all sessions by track.
+
+### Bonus Task 2: Dynamic Parameter List
+Custom Connector support a few UI improvements, to make the life of users easier in the Power Automate editor. One of them is Dynamic Lists. Basically you can populate a drop-down for a parameter dynamically with another operation.
+
+We will update the **get-tracks** operation, so that a list of available events will be displayed.
+
+Go to your Custom Connector, Definitions and click on the **filter** parameter and **Edit**.
+!["Edit Get-Tracks parameter"](./assets/lab02_bt1_editparameter.png)
+
+Follow these steps to enable a dynamic dropdown:
+
+* Scroll to the bottom and change **Dropdown Type** to **Dynamic**
+
+* Select the operation which return the data you want to display in **Operation ID**. It needs to be a operation from the same connector.
+
+* Select the attribute which has the value which should be send to the API which usually is a kind of id in the field **Value**
+
+* Select the attrivute which has the value which should be displayed to the user in the field **Value display name**
+!["Dynamics Parameter list"](./assets/lab02_bt2_dynamiclist.png)
+
