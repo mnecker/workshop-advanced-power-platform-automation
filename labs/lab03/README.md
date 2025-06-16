@@ -20,6 +20,9 @@ Save this API key, we will need it in Task 3!
 - Visual Studio Code
 - XrmToolBox (Download and install: https://www.xrmtoolbox.com/)
 
+## Visual Studio Code Project
+If you don't want to create the Visual Studio Code project or have trouble creating it you can find the finished version in this repository https://github.com/mnecker/demo-geotagging 
+
 ## Task 0: Prepare Visual Studio Code
 In order to develop Azure Functions in Visual Studio Code we need to install a few extensions to make our lives easier. Open **Visual Studio Code**
 
