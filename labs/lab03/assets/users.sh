@@ -23,4 +23,8 @@ do
     --force-change-password-next-sign-in false \
     --mail-nickname "dev${i}"
 
+# TO DELETE
+#  echo "Deleting user $UPN"
+#  az ad user delete --id "$UPN"
+
 done

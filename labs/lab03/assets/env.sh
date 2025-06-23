@@ -1,5 +1,6 @@
 #!/bin/bash
-#pac auth login --tenant wpaine.onmicrosoft.com
+pac auth login --tenant wpaine.onmicrosoft.com
+
 for i in {1..100}
 do
   pac admin create \

@@ -16,4 +16,8 @@ for i in {1..100}; do
     --assignee "$user" \
     --role "Contributor" \
     --scope "/subscriptions/69b0d561-ba59-42b4-ac23-6abfe7745ef4/resourceGroups/$rg"
+
+# To delete
+#echo "Deleting resource group: $rg"
+#az group delete --name "$rg" --no-wait --yes
 done
