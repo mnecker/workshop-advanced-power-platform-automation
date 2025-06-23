@@ -7,11 +7,10 @@ In this lab, you will go through the following tasks:
 * Setup authentication
 * Add operation with Parameters
 
-## Task 0: Environment Setup
-
 <details>
   <summary>🧑‍🏫 Prerequisites</summary>
-## Power Apps Developer Environment
+  
+### Power Apps Developer Environment
 
 The Power Apps Developer Environment is a free, personal environment that allows you to build and test apps, flows, and other solutions using Microsoft Power Platform. It provides a sandbox for developers to experiment with Dataverse, Power Apps, Power Automate, and more.
 To get started, you need to create a Power Apps Developer Environment if you don't have one already. Follow these steps:
@@ -22,9 +21,10 @@ To get started, you need to create a Power Apps Developer Environment if you don
 4. Once created, you can access your environment from the Power Apps portal at [make.powerapps.com](https://make.powerapps.com).
 5. In the Power Apps portal, you can create and manage your apps, flows, and data tables.
 
+### Azure Subscription
+The Azure subscription is required to access various Azure services, including Logic Apps, Azure Functions, Azure Storage, and Azure Data Factory, which are used in this workshop. If you don't have an Azure subscription, you can sign up for a free account at [Azure Free Account](https://azure.microsoft.com/free/).
+
 </details>
-
-
 
 ## Task 1: Create a solution
 
@@ -135,7 +135,10 @@ Because the connector is newly created there is no Connection yet so in order to
 
 This will open a new tab where you have the default Create New Connection interface like for all connectors. Which fields are shown is dependent on the selected authentication method. In our case this is the API key. Recognize the name of this field? That's the label we defined in the **Security** step! Click **Create Connection** to create it.
 
+You find the API Key in the file secrets.md here in this repository. (Remind me to rotate the key after the workshop!)
+
 !["Create Connection"](./assets/lab02_02_testcreateconnection.png)
+
 
 You will be redirect to the test screen. If the **Connection** field is still empty, click on the **Refresh** button and your newly created connection shows up.
 
@@ -237,8 +240,28 @@ After this let's test our new function! **Update Connector** and move to the **T
 
 This works pretty well! But obviously this not an ideal user experience, you need to know very cryptic GUIDs and there is no support on how to enter them. This is one of the limits of the current Custom Connector UX. The UX is better in Power Automate
 
-## Bonus Task 1:
+### Bonus Task 1:
 
 **Challenge** Test the UX in Power Automate!
 
 For this build a flow that iterates through all the events, and per events through all sessions by track.
+
+### Bonus Task 2: Dynamic Parameter List
+Custom Connector support a few UI improvements, to make the life of users easier in the Power Automate editor. One of them is Dynamic Lists. Basically you can populate a drop-down for a parameter dynamically with another operation.
+
+We will update the **get-tracks** operation, so that a list of available events will be displayed.
+
+Go to your Custom Connector, Definitions and click on the **filter** parameter and **Edit**.
+!["Edit Get-Tracks parameter"](./assets/lab02_bt1_editparameter.png)
+
+Follow these steps to enable a dynamic dropdown:
+
+* Scroll to the bottom and change **Dropdown Type** to **Dynamic**
+
+* Select the operation which return the data you want to display in **Operation ID**. It needs to be a operation from the same connector.
+
+* Select the attribute which has the value which should be send to the API which usually is a kind of id in the field **Value**
+
+* Select the attrivute which has the value which should be displayed to the user in the field **Value display name**
+!["Dynamics Parameter list"](./assets/lab02_bt2_dynamiclist.png)
+

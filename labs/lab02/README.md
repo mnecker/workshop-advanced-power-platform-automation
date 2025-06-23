@@ -39,7 +39,7 @@ Go to **Extensions** search for **Azure Tools** and click install. Azure Tools p
 ### C# Extension for Visual Studio Code 
 Go to **Extensions** search for **C# Dev Kit** and click install which will add support for C# to Visual Studio Code. You can also create Azure Functions in other programming languages, but the examples in this lab will use
 
-!["Install C# Support"](./assets/task0_1_azuretools.png)
+!["Install C# Support"](./assets/task0_2_csharp.png)
 
 **Important** After installing all pre-requisites (especially Azure Functions Core Tools) close all instances of Visual Studio Code and start it again. Otherwise some extension will not be loaded correctly.
 
